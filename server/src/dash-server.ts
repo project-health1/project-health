@@ -38,6 +38,7 @@ export class DashServer {
 
     app.get('/dash.json', this.handleDashJson.bind(this));
     app.post('/login', bodyParser.text(), this.handleLogin.bind(this));
+    app.post('/webhook', bodyParser.json(), this.handleWebhook.bind(this));
     app.post(
         '/api/push-subscription/:action',
         bodyParser.json(),
@@ -173,6 +174,11 @@ export class DashServer {
       }
     }
     return {prs};
+  }
+
+  handleWebhook(req: express.Request, res: express.Response) {
+    // TODO: Support webhooks
+    res.sendStatus(200);
   }
 }
 

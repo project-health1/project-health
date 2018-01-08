@@ -84,7 +84,6 @@ export class DashServer {
     });
 
     if (postResp['error']) {
-      console.log(postResp);
       res.sendStatus(500);
       return;
     }
@@ -128,19 +127,25 @@ export class DashServer {
   }
 
   async handleDashJson(req: express.Request, res: express.Response) {
-    const token = req.cookies['id'];
-    const loginResult = await this.github.query<ViewerLoginQuery>({
-      query: viewerLoginQuery,
-      fetchPolicy: 'network-only',
-      context: {token},
-    });
-    const login = loginResult.data.viewer.login;
-    const userData = await this.fetchUserData(login, token);
-    res.header('content-type', 'application/json');
-    res.send(JSON.stringify(userData, null, 2));
+    try {
+      const token = req.cookies['id'];
+      console.log(`handleDashJSON: `, req.cookies);
+      const loginResult = await this.github.query<ViewerLoginQuery>({
+        query: viewerLoginQuery,
+        fetchPolicy: 'network-only',
+        context: {token},
+      });
+      const login = loginResult.data.viewer.login;
+      const userData = await this.fetchUserData(login, token);
+      res.header('content-type', 'application/json');
+      res.send(JSON.stringify(userData, null, 2));
+    } catch (err) {
+      res.sendStatus(500);
+    }
   }
 
   async fetchUserData(login: string, token: string): Promise<DashResponse> {
+    console.log(`----> Fetch user data: ${login}, token: ${token}`);
     const incomingReviewsQuery =
         `is:open is:pr review-requested:${login} archived:false`;
 
@@ -178,6 +183,7 @@ export class DashServer {
 
   handleWebhook(req: express.Request, res: express.Response) {
     // TODO: Support webhooks
+    console.log(req.body);
     res.sendStatus(200);
   }
 }

@@ -3,23 +3,28 @@
   const REDIRECT_ORIGIN = window.location.origin;
 
   var queryParams = new URLSearchParams(window.location.search);
+  const redirectOrigin = queryParams.get('redirect-origin');
+  const loginCode = queryParams.get('code');
 
-  if (queryParams.has('code')) {
-    fetch('/login', {
-      method: 'POST',
-      body: queryParams.get('code'),
-      credentials: 'include',
-    }).then(() => {
-      const redirectOrigin = queryParams.get('redirect-origin');
-      if (redirectOrigin) {
-        window.location = new URL('/dash.html', redirectOrigin).toString();
-      } else {
-        window.location.href = '/dash.html';
-      }
-    });
-  } else if (queryParams.has('error')) {
-    throw new Error(`Error returned by Github: '${queryParams.get('error_description')}'`);
+  // This redirect allows testing on localhost or on the remote server
+  if (redirectOrigin) {
+    // Redirect to the same URL, just on the different origin.
+    const redirectOauthURL = new URL(window.location.pathname, redirectOrigin);
+    redirectOauthURL.search = `code=${loginCode}`;
+    window.location = redirectOauthURL.toString();
   } else {
-    window.location = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=https://project-health-test.appspot.com/oauth.html?redirect-origin=${REDIRECT_ORIGIN}`;
+    if (queryParams.has('code')) {
+      fetch('/login', {
+        method: 'POST',
+        body: loginCode,
+        credentials: 'include',
+      }).then(() => {
+        window.location.href = '/dash.html';
+      });
+    } else if (queryParams.has('error')) {
+      throw new Error(`Error returned by Github: '${queryParams.get('error_description')}'`);
+    } else {
+      window.location = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=https://project-health-test.appspot.com/oauth.html?redirect-origin=${REDIRECT_ORIGIN}`;
+    }
   }
 </script>

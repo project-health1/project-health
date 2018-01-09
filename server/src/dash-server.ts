@@ -42,9 +42,9 @@ export class DashServer {
     app.post('/login', bodyParser.text(), this.handleLogin.bind(this));
     app.post('/webhook', bodyParser.json(), this.handleWebhook.bind(this));
     app.post(
-      '/api/webhook/:action',
-      bodyParser.json(),
-      this.handleWebhookAction.bind(this));
+        '/api/webhook/:action',
+        bodyParser.json(),
+        this.handleWebhookAction.bind(this));
     app.post(
         '/api/push-subscription/:action',
         bodyParser.json(),
@@ -188,13 +188,14 @@ export class DashServer {
 
   handleWebhook(req: express.Request, res: express.Response) {
     // TODO: Support webhooks
-    console.log(req.body);
     res.sendStatus(200);
   }
+
 
   async handleWebhookAction(req: express.Request, res: express.Response) {
     const owner = req.body.owner;
     const repo = req.body.repo;
+    const hookId = req.body.hookId;
     const action = req.params.action;
 
     if (!owner || !repo || !req.cookies['id']) {
@@ -223,10 +224,7 @@ export class DashServer {
           events: [
             '*',
           ],
-          config: {
-            url: `${SERVER_ORIGIN}/webhook`,
-            content_type: 'json'
-          }
+          config: {url: `${SERVER_ORIGIN}/webhook`, content_type: 'json'}
         }),
       });
 
@@ -235,7 +233,32 @@ export class DashServer {
         return;
       }
     } else if (action === 'disable') {
+      if (!hookId) {
+        res.sendStatus(400);
+        return;
+      }
+      const postResp = await request.delete({
+        url: `https://api.github.com/repos/${owner}/${repo}/hooks/${hookId}`,
+        headers: {
+          'Authorization': `token ${req.cookies['id']}`,
+          'User-Agent': 'project-health',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'web',
+          active: true,
+          events: [
+            '*',
+          ],
+          config: {url: `${SERVER_ORIGIN}/webhook`, content_type: 'json'}
+        }),
+      });
 
+      if (postResp['error']) {
+        res.sendStatus(500);
+        return;
+      }
     } else {
       res.sendStatus(400);
       return;

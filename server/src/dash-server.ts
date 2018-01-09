@@ -16,16 +16,20 @@ const SERVER_ORIGIN = 'http://project-health-test.appspot.com';
 
 export class DashServer {
   private secrets: {
-    GITHUB_CLIENT_ID: string,
-    GITHUB_CLIENT_SECRET: string,
+    app: {
+      GITHUB_CLIENT_ID: string,
+      GITHUB_CLIENT_SECRET: string,
+    }
   };
   private github: GitHub;
   private app: express.Express;
   private pushSubscriptions: PushSubscriptionModel;
 
   constructor(github: GitHub, secrets: {
-    GITHUB_CLIENT_ID: string,
-    GITHUB_CLIENT_SECRET: string,
+    app: {
+      GITHUB_CLIENT_ID: string,
+      GITHUB_CLIENT_SECRET: string,
+    }
   }) {
     this.github = github;
     this.secrets = secrets;
@@ -78,12 +82,13 @@ export class DashServer {
       res.sendStatus(400);
       return;
     }
+
     const postResp = await request.post({
       url: 'https://github.com/login/oauth/access_token',
       headers: {'Accept': 'application/json'},
       form: {
-        'client_id': this.secrets.GITHUB_CLIENT_ID,
-        'client_secret': this.secrets.GITHUB_CLIENT_SECRET,
+        'client_id': this.secrets.app.GITHUB_CLIENT_ID,
+        'client_secret': this.secrets.app.GITHUB_CLIENT_SECRET,
         'code': req.body,
       },
       json: true,
@@ -95,7 +100,7 @@ export class DashServer {
     }
 
     res.cookie('id', postResp['access_token'], {httpOnly: true});
-    res.cookie('scope', postResp['scope'], {httpOnly: true});
+    // res.cookie('scope', postResp['scope'], {httpOnly: true});
     res.end();
   }
 
@@ -188,6 +193,7 @@ export class DashServer {
 
   handleWebhook(req: express.Request, res: express.Response) {
     // TODO: Support webhooks
+    console.log(req);
     res.sendStatus(200);
   }
 

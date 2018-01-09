@@ -12,6 +12,8 @@ import {GitHub} from './github';
 import {ViewerLoginQuery, ViewerPullRequestsQuery} from './gql-types';
 import {PushSubscriptionModel} from './models/PushSubscriptionModel';
 
+const SERVER_ORIGIN = 'http://project-health-test.appspot.com';
+
 export class DashServer {
   private secrets: {
     GITHUB_CLIENT_ID: string,
@@ -39,6 +41,10 @@ export class DashServer {
     app.get('/dash.json', this.handleDashJson.bind(this));
     app.post('/login', bodyParser.text(), this.handleLogin.bind(this));
     app.post('/webhook', bodyParser.json(), this.handleWebhook.bind(this));
+    app.post(
+      '/api/webhook/:action',
+      bodyParser.json(),
+      this.handleWebhookAction.bind(this));
     app.post(
         '/api/push-subscription/:action',
         bodyParser.json(),
@@ -89,6 +95,7 @@ export class DashServer {
     }
 
     res.cookie('id', postResp['access_token'], {httpOnly: true});
+    res.cookie('scope', postResp['scope'], {httpOnly: true});
     res.end();
   }
 
@@ -129,7 +136,6 @@ export class DashServer {
   async handleDashJson(req: express.Request, res: express.Response) {
     try {
       const token = req.cookies['id'];
-      console.log(`handleDashJSON: `, req.cookies);
       const loginResult = await this.github.query<ViewerLoginQuery>({
         query: viewerLoginQuery,
         fetchPolicy: 'network-only',
@@ -145,7 +151,6 @@ export class DashServer {
   }
 
   async fetchUserData(login: string, token: string): Promise<DashResponse> {
-    console.log(`----> Fetch user data: ${login}, token: ${token}`);
     const incomingReviewsQuery =
         `is:open is:pr review-requested:${login} archived:false`;
 
@@ -184,6 +189,58 @@ export class DashServer {
   handleWebhook(req: express.Request, res: express.Response) {
     // TODO: Support webhooks
     console.log(req.body);
+    res.sendStatus(200);
+  }
+
+  async handleWebhookAction(req: express.Request, res: express.Response) {
+    const owner = req.body.owner;
+    const repo = req.body.repo;
+    const action = req.params.action;
+
+    if (!owner || !repo || !req.cookies['id']) {
+      res.sendStatus(400);
+      return;
+    }
+
+    const scopes = req.cookies['scope'].split(',');
+    if (scopes.indexOf('write:repo_hook') === -1) {
+      res.sendStatus(400);
+      return;
+    }
+
+    if (action === 'enable') {
+      const postResp = await request.post({
+        url: `https://api.github.com/repos/${owner}/${repo}/hooks`,
+        headers: {
+          'Authorization': `token ${req.cookies['id']}`,
+          'User-Agent': 'project-health',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'web',
+          active: true,
+          events: [
+            '*',
+          ],
+          config: {
+            url: `${SERVER_ORIGIN}/webhook`,
+            content_type: 'json'
+          }
+        }),
+      });
+
+      if (postResp['error']) {
+        res.sendStatus(500);
+        return;
+      }
+    } else if (action === 'disable') {
+
+    } else {
+      res.sendStatus(400);
+      return;
+    }
+
     res.sendStatus(200);
   }
 }

@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Settings Dash</title>
+</head>
+
+<body>
+  <h1>Settings</h1>
+  <p>This is a test bed for settings at the moment.</p>
+  <p><button class="repo-webhook" disabled>Loading</button></p>
+</body>
+
+<script>
+  const repoWebhookButton = document.querySelector(`.repo-webhook`);
+
+  // TODO: Check the current state of the webhook
+
+  let webhookEnabled = false;
+
+  const updateUI = () => {
+    if (webhookEnabled) {
+      repoWebhookButton.textContent = 'Disable Webhook on project-health repo';
+    } else {
+      repoWebhookButton.textContent = 'Enable Webhook on project-health repo';
+    }
+  };
+  updateUI();
+
+  repoWebhookButton.disabled = false;
+  repoWebhookButton.addEventListener(`click`, function() {
+    repoWebhookButton.disabled = true;
+    const action = webhookEnabled ? 'disable' : 'enable';
+    fetch(`/api/webhook/${action}`, {
+      method: 'post',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        owner: 'gauntface',
+        repo: 'simple-push-demo',
+      }),
+    })
+    .then((response) => {
+      // If everything went as planned - flip current enabled state
+      webhookEnabled = response.ok ? !webhookEnabled : webhookEnabled;
+    })
+    .then(() => {
+      updateUI();
+      repoWebhookButton.disabled = false;
+    });
+  });
+</script>
+
+</html>

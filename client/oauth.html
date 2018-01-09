@@ -24,7 +24,7 @@
     } else if (queryParams.has('error')) {
       throw new Error(`Error returned by Github: '${queryParams.get('error_description')}'`);
     } else {
-      window.location = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=https://project-health-test.appspot.com/oauth.html?redirect-origin=${REDIRECT_ORIGIN}`;
+      window.location = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=write:repo_hook%20admin:org_hook&redirect_uri=https://project-health-test.appspot.com/oauth.html?redirect-origin=${REDIRECT_ORIGIN}`;
     }
   }
 </script>

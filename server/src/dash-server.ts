@@ -151,6 +151,7 @@ export class DashServer {
       res.header('content-type', 'application/json');
       res.send(JSON.stringify(userData, null, 2));
     } catch (err) {
+      console.error(err.message);
       res.sendStatus(500);
     }
   }

@@ -34,7 +34,9 @@ async function start() {
   }
   </style>
   `;
-    render(initialRender, (document.querySelector('.settings-container') as Element));
+  render(
+      initialRender,
+      (document.querySelector('.settings-container') as Element));
 }
 
 start();

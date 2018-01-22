@@ -5,7 +5,7 @@ async function start() {
   <h2>Your notifications</h2>
 
   <div class="toggle-option">
-      <button class="toggle-option__toggle">
+      <button class="toggle-option__toggle" disabled>
           Toggle
       </button>
       <div class="toggle-option__details">
